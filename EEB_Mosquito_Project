@@ -1,0 +1,59 @@
+---
+title: 'Mosquito Project: Dec 8, 2022'
+author: "Emilie Nero, Julia Marques, Sarah Martinez-Fuller, Simon Sevenier"
+output:
+  pdf_document: default
+---
+
+```{r, eval=FALSE}
+library(tidyverse)
+```
+
+```{r}
+mosquito_data<-read.csv("CDC_host_seeking_mosquitoes_and_MClim_data_NERC.csv") #importing the csv file into R
+
+# Removing the columns that we are not looking at (includes male abundances, and maximum and minimum temperature and humidity)
+filtered_mosquito_data<-subset(mosquito_data, select = -c(Agml,Afml,Acml,Acfem, 
+                                  OthAn,MaxTemp,MaxHum,MinTemp,MinHum))
+
+
+sum(is.na(filtered_mosquito_data))  # assessing the number of Na
+
+
+clean_mosquito_data <- filtered_mosquito_data %>%   # removing the Na
+  filter((!is.na(Agfed)) &
+           (!is.na(Agunf)) &
+           (!is.na(Aggrv)) &
+           (!is.na(Affed)) &
+           (!is.na(Affunf)) &
+           (!is.na(Afgrv)))
+
+
+sum(is.na(clean_mosquito_data))  # checking the number of Na again
+
+
+
+write.csv(clean_mosquito_data, "clean_mosquito_data.csv")  # creating a new csv dataset with only the variables of interest
+
+mosquito <- read.csv("clean_mosquito_data.csv")  # calling this new dataset in R
+```
+
+
+# Rapid Exploratory Analysis
+
+```{r}
+str(mosquito)
+
+#Histogram of mean temperatures in each sites
+
+ggplot(data=clean_mosquito_data)+theme_classic()+
+  geom_histogram(aes(x=MeanTemp))+
+  labs(title= "distribution of the mean temperature recorded in each sites")
+
+
+#Histogram of mean humidity in each sites
+
+ggplot(data=clean_mosquito_data)+theme_classic()+
+  geom_histogram(aes(x=MeanHum))+
+  labs(title= "distribution of the mean humidity recorded in each sites")
+```
