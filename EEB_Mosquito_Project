@@ -5,22 +5,32 @@ output:
   pdf_document: default
 ---
 
-```{r, eval=FALSE}
+
+# Big title
+
+```{r eval=FALSE}
+library(ggalt)
+library(lme4)
+library(lmerTest)
+library(MuMIn)
+library(sjmisc)
 library(tidyverse)
 ```
 
+## Data manipulation
 ```{r}
 mosquito_data<-read.csv("CDC_host_seeking_mosquitoes_and_MClim_data_NERC.csv") #importing the csv file into R
 
-# Removing the columns that we are not looking at (includes male abundances, and maximum and minimum temperature and humidity)
+# Removing the columns that we are not looking at (includes male abundances, maximum and minimum temperature and humidity)
 filtered_mosquito_data<-subset(mosquito_data, select = -c(Agml,Afml,Acml,Acfem, 
                                   OthAn,MaxTemp,MaxHum,MinTemp,MinHum))
 
 
-sum(is.na(filtered_mosquito_data))  # assessing the number of Na
+
+sum(is.na(filtered_mosquito_data))  # assessing the number of NAs
 
 
-clean_mosquito_data <- filtered_mosquito_data %>%   # removing the Na
+clean_mosquito <- filtered_mosquito_data %>%   # cleaning out NAs
   filter((!is.na(Agfed)) &
            (!is.na(Agunf)) &
            (!is.na(Aggrv)) &
@@ -29,31 +39,57 @@ clean_mosquito_data <- filtered_mosquito_data %>%   # removing the Na
            (!is.na(Afgrv)))
 
 
-sum(is.na(clean_mosquito_data))  # checking the number of Na again
+sum(is.na(clean_mosquito))  # checking the number of NAs again
 
 
-
-write.csv(clean_mosquito_data, "clean_mosquito_data.csv")  # creating a new csv dataset with only the variables of interest
-
-mosquito <- read.csv("clean_mosquito_data.csv")  # calling this new dataset in R
+#write.csv(clean_mosquito, "clean_mosquito_data.csv")  # creating a new csv dataset with only the variables of interest
 ```
 
+```{r}
+#rename the columns and then seperate 
+clean_mosquito$Ag_fed<-clean_mosquito$Agfed
+clean_mosquito$Ag_unf<-clean_mosquito$Agunf
+clean_mosquito$Ag_grv<-clean_mosquito$Aggrv
+clean_mosquito$Af_fed<-clean_mosquito$Affed
+clean_mosquito$Af_unf<-clean_mosquito$Affunf
+clean_mosquito$Af_grv<-clean_mosquito$Afgrv
 
-# Rapid Exploratory Analysis
+head(clean_mosquito)
 
+
+# mosquito_long - have to change the format into a long dataset
+mosquito_long<-clean_mosquito %>% 
+  gather("species","abundance", Ag_fed:Af_grv) #gather the species columns together
+
+head(mosquito_long)
+
+
+# remove the old columns
+mosquito_long<-mosquito_long %>% 
+  dplyr::select(-"Agfed", -"Agunf", -"Aggrv", -"Affed", -"Affunf", -"Afgrv")
+
+
+# now seperate the species column into a "species" column and a "status" column - have to use str_split_fixed
+mosquito_long[c("species", "status")] <- str_split_fixed(mosquito_long$species, "_",2)
+head(mosquito_long)
+
+head(mosquito_long)
+```
+
+## Rapid Exploratory Analysis
 ```{r}
 str(mosquito)
 
 #Histogram of mean temperatures in each sites
 
-ggplot(data=clean_mosquito_data)+theme_classic()+
+ggplot(data=mosquito)+theme_classic()+
   geom_histogram(aes(x=MeanTemp))+
   labs(title= "distribution of the mean temperature recorded in each sites")
 
 
 #Histogram of mean humidity in each sites
 
-ggplot(data=clean_mosquito_data)+theme_classic()+
+ggplot(data=mosquito)+theme_classic()+
   geom_histogram(aes(x=MeanHum))+
   labs(title= "distribution of the mean humidity recorded in each sites")
 ```
