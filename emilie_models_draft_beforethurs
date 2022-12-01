@@ -183,7 +183,7 @@ AICc(mixed_model_intercept_full,
      linear_model_S_2,
      linear_model_S_3)
 
-# My saturated model has the best AICc. Slay. 
+# My saturated model has the best AICc.
 ```
 
 
