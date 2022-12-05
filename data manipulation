@@ -1,0 +1,85 @@
+---
+title: "data manipulation"
+output: html_notebook
+---
+
+# TO SEND TO GROUP MEMBERS
+
+```{r}
+# load libraries
+
+library(ggalt)
+library(lme4)
+library(lmerTest)
+library(MuMIn)
+library(sjmisc)
+library(tidyverse)
+
+mosquito<-read.csv("clean_mosquito_data.csv") 
+```
+
+```{r}
+# remove the NAs, this was done because there were either issues with traps pvernight or the house changed etc. 
+
+sum(is.na(mosquito)) # to check the number of NAs
+mosquito
+
+clean_mosquito<-mosquito %>% #cleaning out NAs
+  filter((!is.na(Agfed)) & 
+           (!is.na(Agunf)) &
+           (!is.na(Aggrv)) & 
+           (!is.na(Affed)) & 
+           (!is.na(Affunf)) &
+           (!is.na(Afgrv)))
+
+sum(is.na(clean_mosquito)) # to check if NAs have been removed
+```
+
+```{r}
+#rename the columns and then seperate 
+
+clean_mosquito$Ag_fed<-clean_mosquito$Agfed
+clean_mosquito$Ag_unf<-clean_mosquito$Agunf
+clean_mosquito$Ag_grv<-clean_mosquito$Aggrv
+clean_mosquito$Af_fed<-clean_mosquito$Affed
+clean_mosquito$Af_unf<-clean_mosquito$Affunf
+clean_mosquito$Af_grv<-clean_mosquito$Afgrv
+
+clean_mosquito
+
+# mosquito_long - have to change the format into a long dataset
+mosquito_long<-clean_mosquito %>% 
+  gather("species","abundance", Ag_fed:Af_grv) #gather the species columns together
+head(mosquito_long)
+
+# remove the old columns
+mosquito_long<-mosquito_long %>% 
+  dplyr::select(-"Agfed", -"Agunf", -"Aggrv", -"Affed", -"Affunf", -"Afgrv")
+
+# now seperate the species column into a "species" column and a "status" column - have to yse str_split_fixed
+mosquito_long[c("species", "status")] <- str_split_fixed(mosquito_long$species, "_",2)
+head(mosquito_long)
+
+mosquito_long
+```
+
+JULIA:
+- making linear models for abundance~MeanTemp*MeanHum + status + species
+
+SIMON:
+- making linear models for abundance~MeanTemp*MeanHum + status + species
+
+when making your linear models be consistent with naming them so I can keep track as I do the AICc: use this method-
+
+"linear_model_J_1" (julia)
+or 
+"linear_model_S_1" (simon)
+
+After you create your lm's and I make my mixed models I will do a giant AICc to see which model is the best :)
+
+
+
+
+
+
+

@@ -1,0 +1,141 @@
+---
+title: "Regression 1 Final EEB313"
+output: html_notebook
+---
+
+```{r}
+library(tinytex)
+library(ggpubr)
+library(deSolve)
+library(tidyverse)
+library(ggalt)
+library(lme4)
+library(lmerTest)
+library(MuMIn)
+library(sjmisc)
+library(nlme)
+library(terra) 
+library(sf)
+library(maps)
+library(ape)
+library(RColorBrewer)
+```
+
+```{r}
+mosquito<- read.csv("clean_mosquito_data.csv")
+```
+
+```{r}
+clean_mosquito<- mosquito %>% 
+  filter((!is.na(Agfed)) &
+           (!is.na(Agunf)) &
+           (!is.na(Aggrv)) &
+           (!is.na(Affed)) &
+           (!is.na(Affunf)) &
+           (!is.na(Afgrv)))
+
+sum(is.na(clean_mosquito))
+```
+
+```{r}
+#rename the columns and then seperate 
+
+clean_mosquito$Ag_fed<-clean_mosquito$Agfed
+clean_mosquito$Ag_unf<-clean_mosquito$Agunf
+clean_mosquito$Ag_grv<-clean_mosquito$Aggrv
+clean_mosquito$Af_fed<-clean_mosquito$Affed
+clean_mosquito$Af_unf<-clean_mosquito$Affunf
+clean_mosquito$Af_grv<-clean_mosquito$Afgrv
+
+clean_mosquito
+
+# mosquito_long - have to change the format into a long dataset
+mosquito_long<-clean_mosquito %>% 
+  gather("species","abundance", Ag_fed:Af_grv) #gather the species columns together
+head(mosquito_long)
+
+# remove the old columns
+mosquito_long<-mosquito_long %>% 
+  dplyr::select(-"Agfed", -"Agunf", -"Aggrv", -"Affed", -"Affunf", -"Afgrv")
+
+# now seperate the species column into a "species" column and a "status" column - have to yse str_split_fixed
+mosquito_long[c("species", "status")] <- str_split_fixed(mosquito_long$species, "_",2)
+head(mosquito_long)
+
+mosquito_long
+```
+
+
+```{r}
+#Multiple Regression 1, Hypothesis 1
+mos_long_1.1<- mosquito_long %>% 
+  filter(status == "fed") #only fed state mosquitoes
+
+MR1.1<- lm(abundance ~ MeanTemp * MeanHum, #interested on temp and hum on fed state
+           data = mos_long_1.1)
+
+summary(MR1.1)
+```
+
+```{r}
+#Multiple Regression 2, Hypothesis 1
+mos_long_1.2<- mosquito_long %>% 
+  filter(status == "unf") #only unfed state mosquitoes
+
+MR1.2<- lm(abundance ~ MeanTemp * MeanHum, #interested on temp and hum on unfed state
+           data = mos_long_1.2)
+
+summary(MR1.2)
+```
+
+```{r}
+#Multiple Regression 3, Hypothesis 1
+mos_long_1.3<- mosquito_long %>% 
+  filter(status == "grv") #only gravid state mosquitoes
+
+MR1.3<- lm(abundance ~ MeanTemp * MeanHum, #interested on temp and hum on gravid state
+           data = mos_long_1.3)
+
+summary(MR1.3)
+```
+
+```{r}
+#Check assumptions for each linear model
+plot(MR1.1, 1:2)
+```
+
+```{r}
+plot(MR1.2, 1:2)
+```
+
+```{r}
+plot(MR1.3, 1:2)
+```
+
+```{r}
+#to compare, the following are the same as above, but are modified to see if the assumptions are better met
+#can omit based on length of paper
+
+MR1.1.trans<- lm(log10(abundance) ~ MeanTemp * MeanHum, #interested on temp and hum on fed state
+           data = mos_long_1.1)
+
+summary(MR1.1.trans)
+
+MR1.2.trans<- lm(log10(abundance) ~ MeanTemp * MeanHum, #interested on temp and hum on unfed state
+           data = mos_long_1.2)
+
+summary(MR1.2.trans)
+
+MR1.3.trans<- lm(log10(abundance) ~ MeanTemp * MeanHum, #interested on temp and hum on gravid state
+           data = mos_long_1.3)
+
+summary(MR1.3.trans)
+```
+
+```{r}
+#assumption checks
+plot(MR1.1.trans, 1:2)
+plot(MR1.2.trans, 1:2)
+plot(MR1.3.trans, 1:2)
+```
+
