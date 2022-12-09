@@ -1,8 +1,8 @@
 ---
 title: "Group E Final Code"
+author: "Julia Marques, Sarah Martinez-Fuller, Emilie Nero, Simon Sevenier"
 output: html_notebook
 ---
-
 
 ```{r}
 library(lme4)
