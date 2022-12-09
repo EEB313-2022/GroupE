@@ -3,10 +3,7 @@ title: "Group E Final Code"
 output: html_notebook
 ---
 
-```{r}
-setwd("/Users/emilienero/Desktop/EEB313_Files")
-getwd()
-```
+
 ```{r}
 library(lme4)
 library(lmerTest)
@@ -57,7 +54,7 @@ clean_mosquito$Af_fed<-clean_mosquito$Affed
 clean_mosquito$Af_unf<-clean_mosquito$Affunf
 clean_mosquito$Af_grv<-clean_mosquito$Afgrv
 
-clean_mosquito
+head(clean_mosquito)
 
 # mosquito_long - have to change the format into a long dataset
 mosquito_long<-clean_mosquito %>% 
@@ -71,8 +68,6 @@ mosquito_long<-mosquito_long %>%
 # now seperate the species column into a "species" column and a "status" column - have to yse str_split_fixed
 mosquito_long[c("species", "status")] <- str_split_fixed(mosquito_long$species, "_",2)
 head(mosquito_long)
-
-mosquito_long
 ```
 
 
@@ -85,7 +80,7 @@ fixed_model<-lm(abundance~MeanTemp*MeanHum + species + status,
 
 plot(fixed_model, 1:2)
 
-# Okay cool lets say it does not violate our assumptions. Sweet!
+# According to those plots, we can hypothesize that our assumptions are not violated.
 
 #--------------------------------------------------------------------------------------------------------------
 
@@ -118,7 +113,7 @@ linear_model_S_2<-lm(abundance~MeanHum + status + species, data=mosquito_long)
 #dropping MeanHum
 linear_model_S_3<-lm(abundance~MeanTemp + status + species, data=mosquito_long)
 
-#dropping species would just result in Julia's 1 model
+#dropping species would just result in Hypothesis one first model
 
 ```
 
