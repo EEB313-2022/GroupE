@@ -166,7 +166,7 @@ mixed_model_species<-lmer(abundance~MeanTemp*MeanHum + status + (1|village),
 
 # -----------------------------------------------------------------------------------------------------
 
-# AICc of just my mixed models just to see. 
+# AICc of the mixed models only. 
 
 AICc(mixed_model_intercept_full, 
      mixed_model_noint, 
@@ -196,7 +196,7 @@ AICc(mixed_model_intercept_full,
      linear_model_S_2,
      linear_model_S_3)
 
-# My saturated model has the best AICc. Slay. 
+# The saturated model has the best (lowest) AICc.
 ```
 
 ```{r}
