@@ -31,7 +31,6 @@ mosquito<-read.csv("clean_mosquito_data.csv")
 ```{r}
 # remove the NAs, this was done because there were either issues with traps overnight or the house changed etc. 
 sum(is.na(mosquito)) # to check the number of NAs
-mosquito
 
 clean_mosquito<-mosquito %>% #cleaning out NAs
   filter((!is.na(Agfed)) & 
