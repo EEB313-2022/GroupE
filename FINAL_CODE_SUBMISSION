@@ -80,6 +80,7 @@ fixed_model<-lm(abundance~MeanTemp*MeanHum + species + status,
 plot(fixed_model, 1:2)
 
 # According to those plots, we can hypothesize that our assumptions are not violated.
+# (The assumptions being normality at each value of the predictor variable, and homoscedasticity at each predictor variable).
 
 #--------------------------------------------------------------------------------------------------------------
 
@@ -103,7 +104,6 @@ linear_model_J_3<-lm(abundance~MeanTemp + status, data=mosquito_long)
 
 # full linear model
 linear_model_S_1<-lm(abundance~MeanTemp*MeanHum + status + species, data=mosquito_long) # same as Emilie's fixed model (make sure to not repeat in AICc)
-
 summary(linear_model_S_1)
 
 # dropping MeanTemp
