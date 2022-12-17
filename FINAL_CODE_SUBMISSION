@@ -1,0 +1,221 @@
+---
+title: "Group E Final Code"
+author: "Julia Marques, Sarah Martinez-Fuller, Emilie Nero, Simon Sevenier"
+output: html_notebook
+---
+
+```{r}
+library(lme4)
+library(lmerTest)
+library(MuMIn)
+library(sjmisc)
+library(tidyverse)
+library(lsmeans)
+```
+
+```{r}
+mosquito_data<-read.csv("CDC_host_seeking_mosquitoes_and_MClim_data_NERC.csv")
+```
+
+```{r}
+# Removing the columns that we are not looking at (includes male abundances, and maximum and minimum temperature and humidity)
+clean_mosquito_data<-subset(mosquito_data, select = -c(Agml,Afml,Acml,Acfem, 
+                                  OthAn,MaxTemp,MaxHum,MinTemp,MinHum))
+
+# Write the cleaned data as a csv file 
+write.csv(clean_mosquito_data, "clean_mosquito_data.csv")
+
+mosquito<-read.csv("clean_mosquito_data.csv") 
+```
+
+```{r}
+# remove the NAs, this was done because there were either issues with traps overnight or the house changed etc. 
+sum(is.na(mosquito)) # to check the number of NAs
+
+clean_mosquito<-mosquito %>% #cleaning out NAs
+  filter((!is.na(Agfed)) & 
+           (!is.na(Agunf)) &
+           (!is.na(Aggrv)) & 
+           (!is.na(Affed)) & 
+           (!is.na(Affunf)) &
+           (!is.na(Afgrv)))
+
+sum(is.na(clean_mosquito)) # to check if NAs have been removed
+```
+
+```{r}
+#rename the columns and then seperate 
+
+clean_mosquito$Ag_fed<-clean_mosquito$Agfed
+clean_mosquito$Ag_unf<-clean_mosquito$Agunf
+clean_mosquito$Ag_grv<-clean_mosquito$Aggrv
+clean_mosquito$Af_fed<-clean_mosquito$Affed
+clean_mosquito$Af_unf<-clean_mosquito$Affunf
+clean_mosquito$Af_grv<-clean_mosquito$Afgrv
+
+head(clean_mosquito)
+
+# mosquito_long - have to change the format into a long dataset
+mosquito_long<-clean_mosquito %>% 
+  gather("species","abundance", Ag_fed:Af_grv) #gather the species columns together
+head(mosquito_long)
+
+# remove the old columns
+mosquito_long<-mosquito_long %>% 
+  dplyr::select(-"Agfed", -"Agunf", -"Aggrv", -"Affed", -"Affunf", -"Afgrv")
+
+# now seperate the species column into a "species" column and a "status" column - have to yse str_split_fixed
+mosquito_long[c("species", "status")] <- str_split_fixed(mosquito_long$species, "_",2)
+head(mosquito_long)
+```
+
+
+```{r}
+# Basic linear model to look at assumptions
+
+# Plot assumptions for the fixed linear model "fixed_model"
+fixed_model<-lm(abundance~MeanTemp*MeanHum + species + status, 
+                data=mosquito_long)
+
+plot(fixed_model, 1:2)
+
+# According to those plots, we can hypothesize that our assumptions are not violated.
+# (The assumptions being normality at each value of the predictor variable, and homoscedasticity at each predictor variable).
+
+#--------------------------------------------------------------------------------------------------------------
+
+# Hypothesis One: looking at lm of just status, not species
+
+# full linear model
+linear_model_J_1<-lm(abundance~MeanTemp*MeanHum + status, data=mosquito_long)
+summary(linear_model_J_1)
+
+# begin to drop fixed effects:
+
+# dropping MeanTemp
+linear_model_J_2<-lm(abundance~MeanHum + status, data=mosquito_long)
+
+#dropping MeanHum
+linear_model_J_3<-lm(abundance~MeanTemp + status, data=mosquito_long)
+
+# -----------------------------------------------------------------------------------------------------------
+
+# Hypothesis two: looking at the lm of status AND species
+
+# full linear model
+linear_model_S_1<-lm(abundance~MeanTemp*MeanHum + status + species, data=mosquito_long) # same as Emilie's fixed model (make sure to not repeat in AICc)
+summary(linear_model_S_1)
+
+# dropping MeanTemp
+linear_model_S_2<-lm(abundance~MeanHum + status + species, data=mosquito_long)
+
+#dropping MeanHum
+linear_model_S_3<-lm(abundance~MeanTemp + status + species, data=mosquito_long)
+
+#dropping species would just result in Hypothesis one first model
+
+```
+
+```{r}
+# x is a predictor of y (y vs. x, y ~ x (1|village))
+# fixed effects include: abundance, MeanTemp, MeanHum, status, species 
+# random effect is village
+
+#-----------------------------------------------------------------------------------------------------
+
+# saturated (full) mixed model
+mixed_model_intercept_full<-lmer(abundance~MeanTemp*MeanHum+species+status+(1|village), 
+                            data=mosquito_long, REML=FALSE)
+summary(mixed_model_intercept_full)
+# Are there any assumptions that need to be met here? 
+
+# saturated fixed model
+fixed_model<-lm(abundance~MeanTemp*MeanHum + species + status, 
+                data=mosquito_long) # linear model to include all my fixed effects
+summary(fixed_model)
+
+# ------------------------------------------------------------------------------------------------------
+
+#Begin to drop each fixed effect (except for status):
+
+#no interaction between MeanTemp and MeanHum
+mixed_model_noint<-lmer(abundance~MeanTemp+MeanHum+species+status+(1|village), 
+                                  REML=FALSE, data=mosquito_long)
+
+#no effect of MeanTemp
+mixed_model_MeanHum<-lmer(abundance~MeanHum + status + species + (1|village), 
+                                     REML=FALSE, data=mosquito_long)
+
+#no effect of MeanHum
+mixed_model_MeanTemp<-lmer(abundance~MeanTemp + status + species + (1|village), 
+                                     REML=FALSE, data=mosquito_long)
+
+#no fixed effects
+mixed_model_nofix<-lmer(abundance~status+(1|village), 
+                                  REML=FALSE, data=mosquito_long)
+
+#no effect of species
+mixed_model_species<-lmer(abundance~MeanTemp*MeanHum + status + (1|village), 
+                                     REML=FALSE, data=mosquito_long)
+
+# -----------------------------------------------------------------------------------------------------
+
+# AICc of the mixed models only. 
+
+AICc(mixed_model_intercept_full, 
+     mixed_model_noint, 
+     mixed_model_MeanTemp, 
+     mixed_model_MeanHum, 
+     mixed_model_nofix,
+     mixed_model_species,
+     fixed_model)
+
+#Best model is the mixed_model_intercept_full which has the lowest AICc. 
+```
+
+```{r}
+# AICc
+# did not include linear_model_S1 as it is the same as fixed_model
+
+AICc(mixed_model_intercept_full, 
+     mixed_model_noint, 
+     mixed_model_MeanTemp, 
+     mixed_model_MeanHum, 
+     mixed_model_nofix,
+     mixed_model_species,
+     fixed_model, 
+     linear_model_J_1,
+     linear_model_J_2,
+     linear_model_J_3,
+     linear_model_S_2,
+     linear_model_S_3)
+
+# The saturated model has the best (lowest) AICc.
+```
+
+```{r}
+# PLOTS
+
+# Plot for hypothesis one:abundance and status
+abund_mean_lm_status<-data.frame(summary(lsmeans(linear_model_J_1, specs="status")))
+abund_mean_lm_status
+
+ggplot(abund_mean_lm_status, aes(x=status, y=lsmean, colour=status))+
+  geom_errorbar(aes(ymin=lsmean-SE, ymax=lsmean+SE))+
+  geom_point()+
+  theme_classic()+
+  labs(y= "Mean Abundance", x="States")
+
+# Plot for hypothesis two: abundance and species with status
+abund_mean_lm_spec<-data.frame(summary(lsmeans(linear_model_S_1, specs=c("species", "status"))))
+abund_mean_lm_spec
+
+
+ggplot(abund_mean_lm_spec, aes(x=species, y=lsmean, colour=species))+
+  geom_errorbar(aes(ymin=lsmean-SE, ymax=lsmean+SE))+
+  facet_wrap(~status)+
+  geom_point()+
+  theme_classic()+
+  labs(y= "Mean Abundance", x="Species")
+
+```
